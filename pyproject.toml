@@ -1,0 +1,40 @@
+[project]
+name = "mapchat"
+version = "0.0.1"
+description = "A simple Retrieval Augmented Generation app for chatting about places you've been."
+readme = "README.rst"
+license = {text = "BSD-3-Clause"}
+maintainers = [{name = "Matt D'Zmura"}]
+dependencies = [
+    "flask",
+    "requests",
+]
+
+[project.urls]
+Documentation = "https://flask.palletsprojects.com/tutorial/"
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[build-system]
+requires = ["flit_core<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "mapchat"
+
+[tool.flit.sdist]
+include = [
+    "tests/",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+branch = true
+source = ["mapchat", "tests"]
+
+[tool.ruff]
+src = ["src"]

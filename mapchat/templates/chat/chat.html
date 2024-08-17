@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Chat with an LLM!{% endblock %}</h1>
+  <form action="/clear/" method="post">
+    <button name="clearBtn" type="submit">Clear Chat History</button>
+  </form>
+{% endblock %}
+
+{% block content %}
+  {% for message in messages %}
+    <article class="message">
+      <header>
+        <div>
+          <h1>{{ message['role'] }}</h1>
+        </div>
+      </header>
+      <p class="body">{{ message['content'] }}</p>
+    </article>
+    {% if not loop.last %}
+      <hr>
+    {% endif %}
+  {% endfor %}
+  <form method="post">
+    <textarea name="prompt" id="prompt">{{ request.form['prompt'] }}</textarea>
+    <input type="submit" value="Send">
+  </form>
+{% endblock %}
