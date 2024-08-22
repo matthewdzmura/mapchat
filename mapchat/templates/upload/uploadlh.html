@@ -5,11 +5,11 @@
 {% endblock %}
 
 {% block content %}
-  <form method="post">
-    <label for="title">Title</label>
-    <input name="title" id="title" value="{{ request.form['title'] }}" required>
-    <label for="body">Body</label>
-    <textarea name="body" id="body">{{ request.form['body'] }}</textarea>
-    <input type="submit" value="Save">
+  <p>Upload your Location History data so you can ask questions about places you've been. You can obtain your Location History from Google by following the instructions 
+    <a href="https://support.google.com/maps/thread/280205453/how-do-i-download-my-timeline-history?hl=en#:~:text=try%20from%20android%20device%20settings,export%20timeline%20data%2C%20or%20similar." target="_blank" rel="noopener noreferrer">here</a>
+  </p>
+  <form method="post" enctype = "multipart/form-data">
+    <input type="file" accept=".json" name="file"/>
+    <input type="submit"/>
   </form>
 {% endblock %}

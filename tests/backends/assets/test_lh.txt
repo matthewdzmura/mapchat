@@ -1,0 +1,86 @@
+{
+    "semanticSegments": [
+        {
+            "startTime": "2012-03-13T12:00:00.000-04:00",
+            "endTime": "2012-03-13T14:00:00.000-04:00",
+            "timelinePath": [
+                {
+                    "point": "10.1°, -20.0°",
+                    "time": "2012-03-13T13:16:00.000-04:00"
+                }
+            ]
+        },
+        {
+            "startTime": "2012-03-13T13:15:57.000-04:00",
+            "endTime": "2012-03-13T14:49:00.000-04:00",
+            "startTimeTimezoneUtcOffsetMinutes": -240,
+            "endTimeTimezoneUtcOffsetMinutes": -240,
+            "visit": {
+                "hierarchyLevel": 0,
+                "probability": 0.6399999856948853,
+                "topCandidate": {
+                    "placeId": "place_id1",
+                    "semanticType": "UNKNOWN",
+                    "probability": 0.16127462685108185,
+                    "placeLocation": {
+                        "latLng": "10.1°, -20.0°"
+                    }
+                }
+            }
+        },
+        {
+            "startTime": "2012-03-13T19:26:45.000-04:00",
+            "endTime": "2012-03-13T20:27:29.000-04:00",
+            "startTimeTimezoneUtcOffsetMinutes": -240,
+            "endTimeTimezoneUtcOffsetMinutes": -240,
+            "visit": {
+                "hierarchyLevel": 0,
+                "probability": 0.23999999463558197,
+                "topCandidate": {
+                    "placeId": "place_id2",
+                    "semanticType": "UNKNOWN",
+                    "probability": 0.0719480887055397,
+                    "placeLocation": {
+                        "latLng": "10°, -20°"
+                    }
+                }
+            }
+        },
+        {
+            "startTime": "2012-03-13T20:27:29.000-04:00",
+            "endTime": "2012-03-13T21:27:29.000-04:00",
+            "startTimeTimezoneUtcOffsetMinutes": -240,
+            "endTimeTimezoneUtcOffsetMinutes": -240,
+            "visit": {
+                "hierarchyLevel": 0,
+                "probability": 0.23999999463558197,
+                "topCandidate": {
+                    "placeId": "place_id1",
+                    "semanticType": "UNKNOWN",
+                    "probability": 0.0719480887055397,
+                    "placeLocation": {
+                        "latLng": "10°, -20°"
+                    }
+                }
+            }
+        },
+        {
+            "startTime": "2012-03-13T22:27:29.000-04:00",
+            "endTime": "2012-03-13T23:27:29.000-04:00",
+            "startTimeTimezoneUtcOffsetMinutes": -240,
+            "endTimeTimezoneUtcOffsetMinutes": -240,
+            "visit": {
+                "hierarchyLevel": 0,
+                "probability": 0.23999999463558197,
+                "topCandidate": {
+                    "placeId": "place_id3",
+                    "semanticType": "UNKNOWN",
+                    "probability": 0.0719480887055397,
+                    "placeLocation": {
+                        "latLng": "10°, -20°"
+                    }
+                }
+            }
+        }
+    ]
+}

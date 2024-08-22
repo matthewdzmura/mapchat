@@ -33,8 +33,14 @@ def init_db():
     """Clear existing data and create new tables."""
     db = get_db()
 
-    with current_app.open_resource("schema.sql") as f:
-        db.executescript(f.read().decode("utf8"))
+    with current_app.open_resource("backends/location_history_schema.sql") as f:
+        schema = f.read().decode("utf8")
+        print(schema)
+        db.executescript(schema)
+    with current_app.open_resource("backends/chat_history_schema.sql") as f:
+        schema = f.read().decode("utf8")
+        print(schema)
+        db.executescript(schema)
 
 
 @click.command("init-db")

@@ -6,8 +6,11 @@ readme = "README.rst"
 license = {text = "BSD-3-Clause"}
 maintainers = [{name = "Matt D'Zmura"}]
 dependencies = [
+    "python-dateutil",
     "flask",
+    "googlemaps",
     "requests",
+    "responses",
 ]
 
 [project.urls]
