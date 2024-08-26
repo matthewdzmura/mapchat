@@ -10,32 +10,21 @@ import unittest
 class LocationHistoryBackendTest(unittest.TestCase):
 
     def setUp(self):
+        with open("mapchat/backends/location_history_schema.sql",
+                  "r") as schema_file:
+            schema = schema_file.read()
         self.conn = sqlite3.connect(':memory:')
         cursor = self.conn.cursor()
-        cursor.executescript("""
-            DROP TABLE IF EXISTS visit;
-            DROP TABLE IF EXISTS raw_place;
-
-            CREATE TABLE visit (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                start_time INTEGER NOT NULL,
-                end_time INTEGER NOT NULL,
-                place_id TEXT NOT NULL,
-                semantic_type TEXT
-                    CHECK( semantic_type IN
-                    ('UNKNOWN', 'HOME', 'WORK', 'INFERRED_HOME', 'INFERRED_WORK', 'SEARCHED_ADDRESS'))
-                    NOT NULL DEFAULT 'UNKNOWN'
-            );
-
-            CREATE TABLE raw_place (
-                place_id TEXT PRIMARY KEY,
-                place_info TEXT NOT NULL
-            );
-        """)
+        cursor.executescript(schema)
         self.conn.commit()
         self.gmaps = googlemaps.Client("AIzaasdf")
 
     def tearDown(self):
+        with open("mapchat/backends/drop_location_history_tables.sql",
+                  "r") as drop_tables_file:
+            drop_tables_script = drop_tables_file.read()
+        cursor = self.conn.cursor()
+        cursor.executescript(drop_tables_script)
         self.conn.close()
 
     @responses.activate
@@ -55,7 +44,7 @@ class LocationHistoryBackendTest(unittest.TestCase):
                 "html_attributions": [],
                 "result": {
                     "place_id": "place_id1",
-                    "place_name": "Restaurant"
+                    "name": "Restaurant"
                 }
             },
             status=200,
@@ -70,7 +59,7 @@ class LocationHistoryBackendTest(unittest.TestCase):
                 "html_attributions": [],
                 "result": {
                     "place_id": "place_id2",
-                    "place_name": "Laundromat"
+                    "name": "Laundromat"
                 }
             },
             status=200,
@@ -85,7 +74,7 @@ class LocationHistoryBackendTest(unittest.TestCase):
                 "html_attributions": [],
                 "result": {
                     "place_id": "place_id3",
-                    "place_name": "Grocery Store"
+                    "name": "Grocery Store"
                 }
             },
             status=200,
@@ -96,6 +85,7 @@ class LocationHistoryBackendTest(unittest.TestCase):
         backend.populate_location_history(lh)
 
         # Check contents of tables.
+        # First check all the visits are populated.
         cursor = self.conn.cursor()
         rows = cursor.execute("SELECT * FROM visit").fetchall()
         self.assertEqual(len(rows), 4)
@@ -108,24 +98,33 @@ class LocationHistoryBackendTest(unittest.TestCase):
         self.assertEqual(rows[3],
                          (4, 1331692049, 1331695649, 'place_id3', 'UNKNOWN'))
 
+        # Now check the raw place infos are there.
         rows = cursor.execute(
             "SELECT * from raw_place ORDER BY place_id").fetchall()
         self.assertEqual(len(rows), 3)
         self.assertEqual(rows[0][0], 'place_id1')
         self.assertEqual(
             json.loads(rows[0][1]),
-            json.loads(
-                '{"place_id": "place_id1", "place_name": "Restaurant"}'))
+            json.loads('{"place_id": "place_id1", "name": "Restaurant"}'))
         self.assertEqual(rows[1][0], 'place_id2')
         self.assertEqual(
             json.loads(rows[1][1]),
-            json.loads(
-                '{"place_id": "place_id2", "place_name": "Laundromat"}'))
+            json.loads('{"place_id": "place_id2", "name": "Laundromat"}'))
         self.assertEqual(rows[2][0], 'place_id3')
         self.assertEqual(
             json.loads(rows[2][1]),
-            json.loads(
-                '{"place_id": "place_id3", "place_name": "Grocery Store"}'))
+            json.loads('{"place_id": "place_id3", "name": "Grocery Store"}'))
+
+        # Finally check to see if the structured places are there.
+        rows = cursor.execute(
+            "SELECT * from places ORDER BY place_id").fetchall()
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0][0], 'place_id1')
+        self.assertEqual(rows[0][1], 'Restaurant')
+        self.assertEqual(rows[1][0], 'place_id2')
+        self.assertEqual(rows[1][1], 'Laundromat')
+        self.assertEqual(rows[2][0], 'place_id3')
+        self.assertEqual(rows[2][1], 'Grocery Store')
 
         # Let's try populating again with more history.
         # Make sure we're not making duplicate calls for place infos.
@@ -192,7 +191,7 @@ class LocationHistoryBackendTest(unittest.TestCase):
                 "html_attributions": [],
                 "result": {
                     "place_id": "place_id3",
-                    "place_name": "Grocery Store"
+                    "name": "Grocery Store"
                 }
             },
             status=200,
@@ -210,8 +209,137 @@ class LocationHistoryBackendTest(unittest.TestCase):
         self.assertEqual(rows[0][0], "place_id3")
         self.assertEqual(
             json.loads(rows[0][1]),
-            json.loads(
-                '{"place_id": "place_id3", "place_name": "Grocery Store"}'))
+            json.loads('{"place_id": "place_id3", "name": "Grocery Store"}'))
+
+    def test_insert_place_info(self):
+        # Sample place dictionary
+        place = {
+            'place_id':
+            'test_place_id',
+            'name':
+            'Test Place',
+            'formatted_address':
+            '123 Test St',
+            'geometry': {
+                'location': {
+                    'lat': 12.34,
+                    'lng': 56.78
+                },
+                'viewport': {
+                    'northeast': {
+                        'lat': 12.35,
+                        'lng': 56.79
+                    },
+                    'southwest': {
+                        'lat': 12.33,
+                        'lng': 56.77
+                    }
+                }
+            },
+            'types': ['restaurant', 'bar'],
+            'address_components': [{
+                'long_name': 'Test City',
+                'short_name': 'TC',
+                'types': ['locality']
+            }],
+            'opening_hours': {
+                'open_now':
+                True,
+                'periods': [{
+                    'open': {
+                        'day': 1,
+                        'time': '0800'
+                    },
+                    'close': {
+                        'day': 1,
+                        'time': '2200'
+                    }
+                }]
+            },
+            'photos': [{
+                'height': 800,
+                'width': 600,
+                'photo_reference': 'photo_ref',
+                'html_attributions': ['<a href="test">Test</a>']
+            }],
+            'reviews': [{
+                'author_name': 'John Doe',
+                'author_url': 'http://example.com',
+                'language': 'en',
+                'profile_photo_url': 'http://example.com/photo.jpg',
+                'rating': 4.5,
+                'relative_time_description': '2 days ago',
+                'text': 'Great place!',
+                'time': 1616161616
+            }]
+        }
+
+        # Call the function
+        backend = LocationHistoryBackend(self.conn, self.gmaps)
+        backend._insert_place_info(place)
+
+        # Verify the data was inserted correctly
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT * FROM places WHERE place_id = ?',
+                       ('test_place_id', ))
+        place_row = cursor.fetchone()
+        self.assertIsNotNone(place_row)
+        self.assertEqual(place_row[0], 'test_place_id')
+        self.assertEqual(place_row[1], 'Test Place')
+        self.assertEqual(place_row[2], '123 Test St')
+        self.assertEqual(place_row[30], 12.34)
+        self.assertEqual(place_row[31], 56.78)
+        self.assertEqual(place_row[32], 12.35)
+        self.assertEqual(place_row[33], 56.79)
+        self.assertEqual(place_row[34], 12.33)
+        self.assertEqual(place_row[35], 56.77)
+        self.assertEqual(json.loads(place_row[36]), ['restaurant', 'bar'])
+
+        cursor.execute('SELECT * FROM address_components WHERE place_id = ?',
+                       ('test_place_id', ))
+        address_component_row = cursor.fetchone()
+        self.assertIsNotNone(address_component_row)
+        self.assertEqual(address_component_row[2], 'Test City')
+        self.assertEqual(address_component_row[3], 'TC')
+        self.assertEqual(json.loads(address_component_row[4]), ['locality'])
+
+        cursor.execute('SELECT * FROM opening_hours WHERE place_id = ?',
+                       ('test_place_id', ))
+        opening_hours_row = cursor.fetchone()
+        self.assertIsNotNone(opening_hours_row)
+        self.assertTrue(opening_hours_row[1])
+
+        cursor.execute(
+            'SELECT * FROM opening_periods WHERE opening_hours_id = ?',
+            (opening_hours_row[0], ))
+        opening_period_row = cursor.fetchone()
+        self.assertIsNotNone(opening_period_row)
+        self.assertEqual(opening_period_row[2], 1)
+        self.assertEqual(opening_period_row[3], '0800')
+        self.assertEqual(opening_period_row[4], 1)
+        self.assertEqual(opening_period_row[5], '2200')
+
+        cursor.execute('SELECT * FROM photos WHERE place_id = ?',
+                       ('test_place_id', ))
+        photo_row = cursor.fetchone()
+        self.assertIsNotNone(photo_row)
+        self.assertEqual(photo_row[2], 800)
+        self.assertEqual(photo_row[3], 600)
+        self.assertEqual(photo_row[4], 'photo_ref')
+        self.assertEqual(json.loads(photo_row[5]), ['<a href="test">Test</a>'])
+
+        cursor.execute('SELECT * FROM reviews WHERE place_id = ?',
+                       ('test_place_id', ))
+        review_row = cursor.fetchone()
+        self.assertIsNotNone(review_row)
+        self.assertEqual(review_row[2], 'John Doe')
+        self.assertEqual(review_row[3], 'http://example.com')
+        self.assertEqual(review_row[4], 'en')
+        self.assertEqual(review_row[6], 'http://example.com/photo.jpg')
+        self.assertEqual(review_row[7], 4.5)
+        self.assertEqual(review_row[8], '2 days ago')
+        self.assertEqual(review_row[9], 'Great place!')
+        self.assertEqual(review_row[10], 1616161616)
 
 
 if __name__ == '__main__':
