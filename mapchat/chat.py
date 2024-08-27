@@ -16,9 +16,11 @@ bp = Blueprint("chat", __name__)
 def chat():
     """Allows user to type a prompt for evaluation by the LLM."""
     agent = Agent(get_db())
-    message_history = agent.chat(
-        request.form["prompt"]
-    ) if (request.method == "POST" and len(request.form["prompt"]) > 0 else agent.message_history()
+    if request.method == "POST":
+        prompt = request.form["prompt"]
+        message_history = agent.chat(prompt)
+    else:
+        message_history = agent.message_history()
     return render_template("chat/chat.html", messages=message_history)
 
 
