@@ -6,7 +6,7 @@ from tests.backends.helpers import (set_up_chat_history_backend_table,
                                     set_up_location_history_backend_table,
                                     tear_down_chat_history_backend_table,
                                     tear_down_location_history_backend_table)
-from typing import Dict, List
+from typing import Any, Dict, List
 
 
 class AgentTestCase(unittest.TestCase):
@@ -19,6 +19,7 @@ class AgentTestCase(unittest.TestCase):
         def chat(self,
                  prompt: str,
                  prev_messages: List[Dict[str, str]],
+                 tools: List[Dict[str, Any]],
                  model: str = "llama3.1") -> Dict[str, str]:
             self.counter += 1
             return {

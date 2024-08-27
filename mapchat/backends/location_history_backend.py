@@ -365,3 +365,28 @@ class LocationHistoryBackend:
 
         # Fetch all results
         return cursor.fetchall()
+
+    def get_tool_dict(self) -> Dict[str, Any]:
+        with open("mapchat/backends/location_history_schema.sql",
+                  "r") as schema_file:
+            schema = schema_file.read()
+        return {
+            "type": "function",
+            "function": {
+                "name":
+                "execute_query",
+                "description":
+                "Executes a query on the location history and places database. The scheme is:\n\n"
+                + schema,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The query string to be executed."
+                        },
+                    },
+                    "required": ["query"]
+                }
+            }
+        }

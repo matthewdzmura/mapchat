@@ -1,6 +1,6 @@
 import json
 import requests
-from typing import List, Dict
+from typing import Any, Dict, List, Optional
 from mapchat.backends.llm_backend import LLMBackendProtocol
 
 
@@ -12,6 +12,7 @@ class OllamaBackend(LLMBackendProtocol):
     def chat(self,
              prompt: str,
              prev_messages: List[Dict[str, str]],
+             tools: List[Dict[str, Any]] = [],
              model: str = "llama3.1") -> Dict[str, str]:
         """
         Simple helper for querying a local ollama instance. It is expected that the
@@ -23,6 +24,8 @@ class OllamaBackend(LLMBackendProtocol):
             prev_messages (List[Dict[str, str]]): Previous chat history between the
                 user and the model. Each list item is a message with "role" and
                 "content" keys populated.
+            tools (List[Dict[str, Any]]): List of tools to pass to Ollama. See
+                https://github.com/ollama/ollama/blob/main/docs/api.md#chat-request-with-tools
             model (str, optional): Model to use for inference. Defaults to
                 "llama3.1".
 
@@ -34,12 +37,11 @@ class OllamaBackend(LLMBackendProtocol):
                 set to assistant.
         """
         messages = prev_messages + [{"role": "user", "content": prompt}]
+        input_json = {"model": model, "messages": messages, "stream": True}
+        if len(tools) > 0:
+            input_json["tools"] = tools
         r = requests.post("http://localhost:11434/api/chat",
-                          json={
-                              "model": model,
-                              "messages": messages,
-                              "stream": True
-                          },
+                          json=input_json,
                           stream=True)
         r.raise_for_status()
         output = ""

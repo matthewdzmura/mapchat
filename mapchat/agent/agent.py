@@ -1,3 +1,5 @@
+import datetime
+
 from mapchat.backends.chat_history_backend import ChatHistoryBackend
 from mapchat.backends.location_history_backend import LocationHistoryBackend
 from mapchat.backends.llm_backend import LLMBackendProtocol
@@ -49,16 +51,29 @@ class Agent:
                 is a message with keys 'role' and 'content' representing the
                 complete message history between the user and the LLM.
         """
+        # Nothing to be done if prompt is empty.
         if prompt == "":
             return self._chat_history_backend.fetch_history()
+
+        # Grab the message history and append the new chat to the database.
         message_history = self._chat_history_backend.fetch_history()
         self._chat_history_backend.append_chat("user", prompt)
+
+        # Set tools to empty for now.
+        tools = []
+
+        # Send the prompt, message history, and tools to the LLM backend.
         response = self._llm_backend.chat(prompt=prompt,
-                                          prev_messages=message_history)
+                                          prev_messages=message_history,
+                                          tools=tools)
+
+        # Append the response to the message history and the chat database.
         message_history = message_history + [{
             "role": "user",
             "content": prompt
         }, response]
         self._chat_history_backend.append_chat(response['role'],
                                                response['content'])
+
+        # Return the complete chat history with the new additions.
         return message_history

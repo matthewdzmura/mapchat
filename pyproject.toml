@@ -9,6 +9,7 @@ dependencies = [
     "python-dateutil",
     "flask",
     "googlemaps",
+    "google-generativeai",
     "requests",
     "responses",
 ]
