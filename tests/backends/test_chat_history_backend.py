@@ -1,4 +1,5 @@
 from mapchat.backends.chat_history_backend import ChatHistoryBackend
+from tests.backends.helpers import set_up_chat_history_backend_table, tear_down_chat_history_backend_table
 
 import sqlite3
 import unittest
@@ -8,19 +9,10 @@ class ChatHistoryBackendTest(unittest.TestCase):
 
     def setUp(self):
         self.conn = sqlite3.connect(':memory:')
-        cursor = self.conn.cursor()
-        cursor.executescript("""
-            DROP TABLE IF EXISTS chat;
-
-            CREATE TABLE chat (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                role TEXT NOT NULL,
-                content TEXT NOT NULL
-            );
-        """)
-        self.conn.commit()
+        set_up_chat_history_backend_table(self.conn)
 
     def tearDown(self):
+        tear_down_chat_history_backend_table(self.conn)
         self.conn.close()
 
     def test_chat_history_backend(self):

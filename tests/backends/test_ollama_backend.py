@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import json
-from mapchat.backends.ollama_backend import ollama_chat
+from mapchat.backends.ollama_backend import OllamaBackend
 
 
-class TestOllamaChat(unittest.TestCase):
+class TestOllamaBackend(unittest.TestCase):
 
     @patch('mapchat.backends.ollama_backend.requests.post')
-    def test_ollama_chat_valid_response(self, mock_post):
+    def test_ollama_backend_valid_response(self, mock_post):
         # Mock response
         mock_response = MagicMock()
         mock_response.iter_lines.return_value = [
@@ -26,12 +26,12 @@ class TestOllamaChat(unittest.TestCase):
 
         prompt = "Hi"
         prev_messages = [{"role": "user", "content": "Hello"}]
-        result = ollama_chat(prompt, prev_messages)
+        result = OllamaBackend().chat(prompt, prev_messages)
 
         self.assertEqual(result, {"role": "assistant", "content": "Hello"})
 
     @patch('mapchat.backends.ollama_backend.requests.post')
-    def test_ollama_chat_error_response(self, mock_post):
+    def test_ollama_backend_error_response(self, mock_post):
         # Mock response with error
         mock_response = MagicMock()
         mock_response.iter_lines.return_value = [
@@ -46,7 +46,7 @@ class TestOllamaChat(unittest.TestCase):
         prev_messages = [{"role": "user", "content": "Hello"}]
 
         with self.assertRaises(Exception) as context:
-            ollama_chat(prompt, prev_messages)
+            OllamaBackend().chat(prompt, prev_messages)
 
         self.assertTrue("Something went wrong" in str(context.exception))
 

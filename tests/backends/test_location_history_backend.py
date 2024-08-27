@@ -1,4 +1,5 @@
 from mapchat.backends.location_history_backend import LocationHistoryBackend
+from tests.backends.helpers import set_up_location_history_backend_table, tear_down_location_history_backend_table
 
 import googlemaps
 import json
@@ -10,21 +11,12 @@ import unittest
 class LocationHistoryBackendTest(unittest.TestCase):
 
     def setUp(self):
-        with open("mapchat/backends/location_history_schema.sql",
-                  "r") as schema_file:
-            schema = schema_file.read()
         self.conn = sqlite3.connect(':memory:')
-        cursor = self.conn.cursor()
-        cursor.executescript(schema)
-        self.conn.commit()
+        set_up_location_history_backend_table(self.conn)
         self.gmaps = googlemaps.Client("AIzaasdf")
 
     def tearDown(self):
-        with open("mapchat/backends/drop_location_history_tables.sql",
-                  "r") as drop_tables_file:
-            drop_tables_script = drop_tables_file.read()
-        cursor = self.conn.cursor()
-        cursor.executescript(drop_tables_script)
+        tear_down_location_history_backend_table(self.conn)
         self.conn.close()
 
     @responses.activate
