@@ -1,11 +1,14 @@
 from dateutil import parser
 
+from google.generativeai.protos import Tool
 import googlemaps
 import logging
 import json
 import os
 import sqlite3
 from typing import Any, Dict, List, Set, Tuple
+
+logger = logging.getLogger(__name__)
 
 
 class LocationHistoryBackend:
@@ -15,8 +18,8 @@ class LocationHistoryBackend:
     storing the result in a sqlite3 database for further querying.
 
     A visit will be stored as a Tuple[int, int, str, str] where the fields are
-        visit[0](int): Start timestamp of the visit (seconds since unix epoch)
-        visit[1](int): End timestamp of the visit (seconds since unix epoch)
+        visit[0](str): Start timestamp of the visit (iso1806 string)
+        visit[1](str): End timestamp of the visit (iso1806 string)
         visit[2](str): Place ID of the visit, a unique identifier that can be
             used to fetch supporting place details from the raw_place table or
             the GoogleMaps Places API.
@@ -57,10 +60,13 @@ class LocationHistoryBackend:
             self.gmaps = googlemaps.Client(key=gmaps_key)
         else:
             self.gmaps = gmaps_client
+        with open("mapchat/backends/location_history_schema.sql",
+                  "r") as schema_file:
+            self._schema = schema_file.read()
 
     def _deduplicate_place_visits(
-        self, new_visits: List[Tuple[int, int, str, str]]
-    ) -> List[Tuple[int, int, str, str]]:
+        self, new_visits: List[Tuple[str, str, str, str]]
+    ) -> List[Tuple[str, str, str, str]]:
         """
         Given a list of visits, will remove any visits (based on start time)
         that are already in the database.
@@ -74,7 +80,7 @@ class LocationHistoryBackend:
             List[Tuple[int, int, str, str]]: The list of filtered visits.
         """
         cur = self.db.cursor()
-        rows = cur.execute("SELECT start_time FROM visit").fetchall()
+        rows = cur.execute("SELECT start_time_iso1806 FROM visit").fetchall()
         old_start_times = {row[0] for row in rows}
         return [
             visit for visit in new_visits if visit[0] not in old_start_times
@@ -93,8 +99,7 @@ class LocationHistoryBackend:
             History enabled.
         """
         cur = self.db.cursor()
-        visits = [(int(parser.isoparse(segment['startTime']).timestamp()),
-                   int(parser.isoparse(segment['endTime']).timestamp()),
+        visits = [(segment['startTime'], segment['endTime'],
                    segment['visit']['topCandidate']['placeId'],
                    segment['visit']['topCandidate']['semanticType'])
                   for segment in lh['semanticSegments'] if 'visit' in segment]
@@ -103,7 +108,7 @@ class LocationHistoryBackend:
         cur.executemany(
             """
                         INSERT INTO visit
-                        (start_time, end_time, place_id, semantic_type)
+                        (start_time_iso1806, end_time_iso1806, place_id, semantic_type)
                         VALUES(?, ?, ?, ?)
                         """, visits)
         self.db.commit()
@@ -146,14 +151,14 @@ class LocationHistoryBackend:
             try:
                 response = self.gmaps.place(place_id)
             except googlemaps.exceptions.ApiError as error:
-                logging.error(error)
-                logging.error("Failed to fetch place info for place id: " +
-                              place_id)
+                logger.error(error)
+                logger.error("Failed to fetch place info for place id: " +
+                             place_id)
             except googlemaps.exceptions.Timeout:
-                logging.error("Timeout failure for place lookup")
+                logger.error("Timeout failure for place lookup")
             except:
-                logging.error("Failed to fetch place info for place id: " +
-                              place_id)
+                logger.error("Failed to fetch place info for place id: " +
+                             place_id)
             else:
                 if response['status'] != 'OK':
                     # TODO: Add error handling
@@ -349,14 +354,42 @@ class LocationHistoryBackend:
 
     def execute_query(self, query: str) -> List[Tuple[Any]]:
         """
-        Executes a SQL query on a sqlite3 database and returns the results.
+        Executes a SQL query on a sqlite3 database and returns the results. The
+        database stores location history and place information in separate
+        tables that can be joined on the place_id field.
+
+        The visit table contains individual visits to places, including when
+        the user entered the place (start_time), left the place (end_time),
+        the place visited (place_id), and whether the place was the user's home
+        or work (semantic_type).
+
+        The places table contains structured data about each place, keyed by
+        place_id. This data includes the name, address, phone number, business
+        status, category of business, and other details.
+
+        There are other tables as well that include more detailed information
+        including address components, opening hours, photos, reviews, and
+        more.
+
+        Only SELECT queries are allowed.
+        Any strings must be wrapped in single quotes like 'string'
+        Queries must be terminated by ;
+        Example query:
+            SELECT * FROM visit WHERE semantic_type = 'UNKNOWN';
 
         Args:
-            query (str): SQL query to be executed.
+            query (str): SQL query to be executed. This must be a SELECT query.
 
         Returns:
             List[Tuple[Any]]: Results of the query.
+
+        Raises:
+            ValueError: If the query is not a SELECT query.
         """
+        # Check if the query is a SELECT query
+        if not query.strip().lower().startswith('select'):
+            raise ValueError("Only SELECT queries are allowed.")
+
         # Connect to the database
         cursor = self.db.cursor()
 
@@ -366,27 +399,23 @@ class LocationHistoryBackend:
         # Fetch all results
         return cursor.fetchall()
 
-    def get_tool_dict(self) -> Dict[str, Any]:
-        with open("mapchat/backends/location_history_schema.sql",
-                  "r") as schema_file:
-            schema = schema_file.read()
-        return {
-            "type": "function",
-            "function": {
-                "name":
+    def gemini_tool_proto(self) -> Tool:
+        execute_query = {
+            'function_declarations': [{
+                'name':
                 "execute_query",
-                "description":
-                "Executes a query on the location history and places database. The scheme is:\n\n"
-                + schema,
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "The query string to be executed."
+                'description':
+                self._schema + self.execute_query.__doc__,
+                'parameters': {
+                    'type_': 'OBJECT',
+                    'properties': {
+                        'query': {
+                            'type_': 'STRING'
                         },
                     },
-                    "required": ["query"]
+                    'required': ['query']
                 }
-            }
+            }]
         }
+        logger.debug("Gemini tool proto: %s", str(execute_query))
+        return Tool(execute_query)

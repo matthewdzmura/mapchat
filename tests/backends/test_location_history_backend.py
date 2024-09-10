@@ -81,14 +81,18 @@ class LocationHistoryBackendTest(unittest.TestCase):
         cursor = self.conn.cursor()
         rows = cursor.execute("SELECT * FROM visit").fetchall()
         self.assertEqual(len(rows), 4)
-        self.assertEqual(rows[0],
-                         (1, 1331658957, 1331664540, 'place_id1', 'UNKNOWN'))
-        self.assertEqual(rows[1],
-                         (2, 1331681205, 1331684849, 'place_id2', 'UNKNOWN'))
-        self.assertEqual(rows[2],
-                         (3, 1331684849, 1331688449, 'place_id1', 'UNKNOWN'))
-        self.assertEqual(rows[3],
-                         (4, 1331692049, 1331695649, 'place_id3', 'UNKNOWN'))
+        self.assertEqual(
+            rows[0], (1, "2012-03-13T13:15:57.000-04:00",
+                      "2012-03-13T14:49:00.000-04:00", 'place_id1', 'UNKNOWN'))
+        self.assertEqual(
+            rows[1], (2, "2012-03-13T19:26:45.000-04:00",
+                      "2012-03-13T20:27:29.000-04:00", 'place_id2', 'UNKNOWN'))
+        self.assertEqual(
+            rows[2], (3, "2012-03-13T20:27:29.000-04:00",
+                      "2012-03-13T21:27:29.000-04:00", 'place_id1', 'UNKNOWN'))
+        self.assertEqual(
+            rows[3], (4, "2012-03-13T22:27:29.000-04:00",
+                      "2012-03-13T23:27:29.000-04:00", 'place_id3', 'UNKNOWN'))
 
         # Now check the raw place infos are there.
         rows = cursor.execute(
@@ -130,10 +134,12 @@ class LocationHistoryBackendTest(unittest.TestCase):
         cursor = self.conn.cursor()
         rows = cursor.execute("SELECT * FROM visit").fetchall()
         self.assertEqual(len(rows), 6)
-        self.assertEqual(rows[4],
-                         (5, 1334337357, 1334342940, 'place_id1', 'UNKNOWN'))
-        self.assertEqual(rows[5],
-                         (6, 1334359605, 1334363249, 'place_id2', 'UNKNOWN'))
+        self.assertEqual(
+            rows[4], (5, "2012-04-13T13:15:57.000-04:00",
+                      "2012-04-13T14:49:00.000-04:00", 'place_id1', 'UNKNOWN'))
+        self.assertEqual(
+            rows[5], (6, "2012-04-13T19:26:45.000-04:00",
+                      "2012-04-13T20:27:29.000-04:00", 'place_id2', 'UNKNOWN'))
 
         rows = cursor.execute(
             "SELECT * from raw_place ORDER BY place_id").fetchall()

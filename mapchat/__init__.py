@@ -2,6 +2,10 @@ import os
 
 from flask import Flask
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
@@ -44,5 +48,8 @@ def create_app(test_config=None):
 
     # Default landing page is /chat
     app.add_url_rule("/", endpoint="chat")
+
+    # Set the logging level.
+    logging.basicConfig(filename='./instance/myapp.log', level=logging.DEBUG)
 
     return app

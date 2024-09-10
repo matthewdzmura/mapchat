@@ -32,25 +32,22 @@ class ChatHistoryBackend:
         """
         cur = self._db.cursor()
         result = cur.execute(
-            "SELECT role, content FROM chat ORDER BY ID").fetchall()
-        message_history = [{
-            "role": row[0],
-            "content": row[1]
-        } for row in result]
+            "SELECT role, parts FROM chat ORDER BY ID").fetchall()
+        message_history = [{"role": row[0], "parts": row[1]} for row in result]
         return message_history
 
-    def append_chat(self, role: str, content: str) -> None:
+    def append_chat(self, role: str, parts: str) -> None:
         """
         Appends the provided chat to the end of the chat history.
         
         Args:
             role(str): Role for the message. For Llama 3.1 can be 'user',
                 'assistant', 'system', or 'ipython'
-            content(str): Content of the message itself.
+            parts(str): Content of the message itself.
         """
         cur = self._db.cursor()
-        cur.execute("""INSERT INTO chat (role, content) VALUES(?, ?)""",
-                    (role, content))
+        cur.execute("""INSERT INTO chat (role, parts) VALUES(?, ?)""",
+                    (role, parts))
         self._db.commit()
 
     def clear_history(self) -> None:

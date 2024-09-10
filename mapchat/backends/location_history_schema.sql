@@ -3,8 +3,8 @@
 
 CREATE TABLE IF NOT EXISTS visit (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  start_time INTEGER NOT NULL,
-  end_time INTEGER NOT NULL,
+  start_time_iso1806 TEXT NOT NULL,
+  end_time_iso1806 TEXT NOT NULL,
   place_id TEXT NOT NULL,
   semantic_type TEXT
     CHECK( semantic_type IN
@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS raw_place (
 CREATE TABLE IF NOT EXISTS places (
     place_id TEXT PRIMARY KEY,
     name TEXT,
+    -- When querying for specific pieces of the address, prefer the address_components table
+    -- instead of formatted_address.
     formatted_address TEXT,
     formatted_phone_number TEXT,
     international_phone_number TEXT,
@@ -57,11 +59,25 @@ CREATE TABLE IF NOT EXISTS places (
     categories TEXT
 );
 
+-- This is the best way to find out fine-grained details about where a place is
+-- located. Example query to name every place visited in California:
+-- SELECT p.name FROM places p
+-- JOIN address_components ac ON p.place_id = ac.place_id
+-- WHERE ac.types LIKE '%administrative_area_level_1%' AND ac.long_name = 'California';
 CREATE TABLE IF NOT EXISTS address_components (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     place_id TEXT,
     long_name TEXT,
     short_name TEXT,
+    -- types is a repeated field that can include the following values:
+    -- street_number: The precise street number in the address e.g. 123 in 123 Main Street.
+    -- route: The street name e.g. Main Street in 123 Main Street
+    -- sublocality: A sublocality is a subdivision within a locality e.g. a neighborhood/borough like Manhattan
+    -- locality: The locality corresponds to the city/town e.g. New York City
+    -- administrative_area_level_2: The second administrative level e.g. a county like New York County
+    -- administrative_area_level_1: The first administrative level e.g. a state like New York
+    -- country: The country in which the place is located e.g. United States
+    -- postal_code: The postal code of the place e.g. 10011
     types TEXT,
     FOREIGN KEY(place_id) REFERENCES places(place_id)
 );

@@ -19,32 +19,32 @@ class ChatHistoryBackendTest(unittest.TestCase):
         backend = ChatHistoryBackend(self.conn)
 
         backend.append_chat("user", "message1")
-        backend.append_chat("assistant", "message2")
+        backend.append_chat("model", "message2")
         backend.append_chat("user", "message3")
         self.assertEqual(backend.fetch_history(), [{
             "role": "user",
-            "content": "message1"
+            "parts": "message1"
         }, {
-            "role": "assistant",
-            "content": "message2"
+            "role": "model",
+            "parts": "message2"
         }, {
             "role": "user",
-            "content": "message3"
+            "parts": "message3"
         }])
 
-        backend.append_chat("assistant", "message4")
+        backend.append_chat("model", "message4")
         self.assertEqual(backend.fetch_history(), [{
             "role": "user",
-            "content": "message1"
+            "parts": "message1"
         }, {
-            "role": "assistant",
-            "content": "message2"
+            "role": "model",
+            "parts": "message2"
         }, {
             "role": "user",
-            "content": "message3"
+            "parts": "message3"
         }, {
-            "role": "assistant",
-            "content": "message4"
+            "role": "model",
+            "parts": "message4"
         }])
 
         backend.clear_history()

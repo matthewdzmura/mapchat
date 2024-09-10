@@ -11,10 +11,9 @@ def get_db():
     again.
     """
     if "db" not in g:
-        g.db = sqlite3.connect(
-            current_app.config["DATABASE"], detect_types=sqlite3.PARSE_DECLTYPES
-        )
-        g.db.row_factory = sqlite3.Row
+        g.db = sqlite3.connect(current_app.config["DATABASE"],
+                               detect_types=sqlite3.PARSE_DECLTYPES)
+        #g.db.row_factory = sqlite3.Row
 
     return g.db
 
@@ -33,7 +32,8 @@ def init_db():
     """Clear existing data and create new tables."""
     db = get_db()
 
-    with current_app.open_resource("backends/location_history_schema.sql") as f:
+    with current_app.open_resource(
+            "backends/location_history_schema.sql") as f:
         schema = f.read().decode("utf8")
         print(schema)
         db.executescript(schema)
@@ -43,6 +43,7 @@ def init_db():
         db.executescript(schema)
 
 
+# Run using 'flask --app mapchat init-db' in the terminal.
 @click.command("init-db")
 def init_db_command():
     """Clear existing data and create new tables."""
