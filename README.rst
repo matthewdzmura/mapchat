@@ -26,6 +26,10 @@ Set up your environment variables::
     $ export GEMINI_API_KEY="your_api_key_here"
     $ export GOOGLE_MAPS_API_KEY="your_api_key_here"
 
+Set up the sqlite3 Database::
+
+    $ flask --app mapchat init-db
+
 Usage
 ------
 Start the Flask server::
@@ -34,12 +38,13 @@ Start the Flask server::
 
 Navigate to http://localhost:5000 in your browser
 
-Click "Upload Location History" and follow the instructions to upload your Google Location History JSON file
+Click "Upload Location History" and follow the instructions to upload your Google Location History JSON file. This may take a few minutes as place details need to be fetched for everywhere you've visited.
 
 Return to the chat interface and start asking questions about your location history
 
-Testing
+Testing::
 ------
+
     $ python -m unittest
 
 Requirements

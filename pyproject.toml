@@ -12,6 +12,7 @@ dependencies = [
     "google-generativeai",
     "requests",
     "responses",
+    "sqlite3",
 ]
 
 [project.urls]
